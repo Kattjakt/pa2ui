@@ -1,4 +1,4 @@
-appId: com.kattjakt.pa2ui
+appId: com.electron.app
 productName: pa2ui
 directories:
   buildResources: build
@@ -19,7 +19,6 @@ nsis:
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
 mac:
-  identity: null
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:
     - NSCameraUsageDescription: Application requests access to the device's camera.
@@ -38,4 +37,6 @@ linux:
 appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
-
+publish:
+  provider: generic
+  url: https://example.com/auto-updates
