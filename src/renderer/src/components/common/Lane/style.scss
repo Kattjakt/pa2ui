@@ -1,0 +1,13 @@
+.lane {
+  --gap: 1rem;
+
+  width: 109%;
+  height: 100%;
+
+  display: flex;
+  flex-direction: row;
+  // justify-content: space-between;
+  padding: 0 var(--gap);
+  gap: var(--gap);
+  align-items: center;
+}

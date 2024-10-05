@@ -1,0 +1,32 @@
+.peq-legend {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  right: 0px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  pointer-events: none;
+  user-select: none;
+
+  &__content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5em;
+
+    // background: hsl(var(--accent-hue), 40%, 40%);
+  }
+
+  &__frequency {
+    display: flex;
+    align-items: center;
+    gap: 0.2em;
+  }
+
+  &__unit {
+    opacity: 0.5;
+  }
+}

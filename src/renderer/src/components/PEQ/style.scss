@@ -1,0 +1,43 @@
+.peq {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 10px;
+  min-width: 300px;
+  min-height: 100px;
+  /* padding: 20px; */
+  padding: 0px;
+  /* border-radius: 8px; */
+  overflow: visible;
+  background: #202020;
+  border: 1px solid #373737;
+
+  width: 100%;
+
+  &__bands {
+    display: grid;
+    // gap: 3px;
+  }
+}
+
+.peq-band {
+  display: inline-grid;
+  grid-template-columns: 3em 4.25em 3.5em 2em;
+  // gap: 0.25em;
+  align-items: center;
+  background: var(--color);
+
+  &[data-active='true'] {
+    .field__input {
+      background-color: #0000008a;
+    }
+  }
+
+  &[data-active='false'] {
+    filter: brightness(0.5);
+  }
+
+  select {
+    height: 100%;
+  }
+}
