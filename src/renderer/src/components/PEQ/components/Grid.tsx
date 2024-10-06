@@ -1,5 +1,5 @@
-import { generateOctaveBandFrequencies, getZeroOneFromThirdOctaveBandFrequency } from '../../common'
-import { usePEQ } from './peq.context'
+import { generateOctaveBandFrequencies, getZeroOneFromThirdOctaveBandFrequency } from '../../../common'
+import { usePEQ } from '../peq.context'
 
 const getGridXs = () => {
   const stops = generateOctaveBandFrequencies()

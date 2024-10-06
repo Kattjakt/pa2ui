@@ -4,7 +4,7 @@ const serializePath = (path: string[]) => {
   return `\\\\${path.join('\\')}`
 }
 
-const samePath = (a?: string[], b?: string[]) => {
+const isSamePath = (a?: string[], b?: string[]) => {
   if (!a || !b) return false
 
   if (a.length !== b.length) return false
@@ -24,13 +24,11 @@ export class Client {
 
   constructor() {
     this.parser = createMessageParser((message) => {
-      // console.log(`< ${JSON.stringify(message)}`)
       this.emitMessage(message)
     })
   }
 
   parse(line: string) {
-    // console.log(`> ${line}`)
     this.parser.push(line)
   }
 
@@ -38,25 +36,25 @@ export class Client {
     this.write(`sub "${serializePath(path)}"\n`)
 
     const onSubr = (message: Message) => {
-      if (samePath(message.path, path)) {
+      if (isSamePath(message.path, path)) {
         callback(message.value)
       }
     }
 
     const onGet = (message: Message) => {
-      if (samePath(message.path, path)) {
+      if (isSamePath(message.path, path)) {
         callback(message.value)
       }
     }
 
     const onSet = (message: Message) => {
-      if (samePath(message.path, path)) {
+      if (isSamePath(message.path, path)) {
         callback(message.value)
       }
     }
 
     const onSetR = (message: Message) => {
-      if (samePath(message.path, path)) {
+      if (isSamePath(message.path, path)) {
         callback(message.value)
       }
     }
@@ -86,16 +84,14 @@ export class Client {
   }
 
   async get(path: string[]) {
-    const cmd = `get "${serializePath(path)}"\n`
-    this.write(cmd)
+    this.write(`get "${serializePath(path)}"\n`)
     const response = await this.waitForNextMessage('get', path)
 
     return response.value!
   }
 
   async asyncget(path: string[]) {
-    const cmd = `asyncget "${serializePath(path)}"\n`
-    this.write(cmd)
+    this.write(`asyncget "${serializePath(path)}"\n`)
     const response = await this.waitForNextMessage('get', path)
 
     return response.value!
@@ -106,23 +102,20 @@ export class Client {
   }
 
   private write(cmd: string) {
-    // Pretty console log
-    // console.log(`> ${cmd}`)
-
     window.electron.ipcRenderer.send('command', cmd)
   }
 
   private waitForNextMessage(type: Message['type'], path: string[]) {
     return new Promise<Message>((resolve, reject) => {
       const onMessage = (message: Message) => {
-        if (message.type === type && samePath(message.path, path)) {
+        if (message.type === type && isSamePath(message.path, path)) {
           resolve(message)
           unregister()
         }
       }
 
       const onError = (message: Message) => {
-        if (samePath(message.path, path)) {
+        if (isSamePath(message.path, path)) {
           reject(message.value)
           unregister()
         }

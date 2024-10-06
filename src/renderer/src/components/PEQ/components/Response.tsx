@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { getThirdOctaveBandFrequencyFromZeroOne, toDecibels } from '../../common'
-import { BaseFilter } from './core/filters'
-import { CrossoverFilter } from './core/filters/crossover'
-import { usePEQ } from './peq.context'
+import { getThirdOctaveBandFrequencyFromZeroOne, toDecibels } from '../../../common'
+import { BaseFilter } from '../core/filters'
+import { CrossoverFilter } from '../core/filters/crossover'
+import { usePEQ } from '../peq.context'
 
 export const generateFrequencies = (count: number): Float32Array => {
   let frequencies = new Float32Array(count)

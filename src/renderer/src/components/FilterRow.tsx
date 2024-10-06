@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
-import { parseFrequencyString, parseGainString } from '../pa2/common'
-import { useSyncedState } from '../pa2/hooks'
+import * as Adapter from '../pa2/adapter'
+import { useDspState } from '../pa2/hooks'
 import { FrequencyInput, GainInput, QInput, SlopeInput } from './common/Inputs'
 import { HighShelfFilter } from './PEQ/core/filters/high-shelf'
 import { LowShelfFilter } from './PEQ/core/filters/low-shelf'
@@ -50,24 +50,20 @@ export const FilterRow: React.FC<BandProps> = (props) => {
   const peq = usePEQ()
   const filter = usePEQFilter(getFilterIndex(props.bandName))
 
-  const [frequency, setFrequency] = useSyncedState([...props.path, `${props.bandName}_Frequency`])
-  const [gain, setGain] = useSyncedState([...props.path, `${props.bandName}_Gain`])
-  const [q, setQ] = useSyncedState([...props.path, `${props.bandName}_Q`])
-  const [slope, setSlope] = useSyncedState([...props.path, `${props.bandName}_Slope`])
-  const [type, setType] = useSyncedState([...props.path, `${props.bandName}_Type`])
+  const [frequency, setFrequency] = useDspState([...props.path, `${props.bandName}_Frequency`], Adapter.Frequency)
+  const [gain, setGain] = useDspState([...props.path, `${props.bandName}_Gain`], Adapter.Decibel)
+  const [q, setQ] = useDspState([...props.path, `${props.bandName}_Q`], Adapter.Number)
+  const [slope, setSlope] = useDspState([...props.path, `${props.bandName}_Slope`], Adapter.Number)
+  const [type, setType] = useDspState([...props.path, `${props.bandName}_Type`])
 
   useEffect(() => {
     const filterNumber = getFilterIndex(props.bandName)
-    const frequencyValue = parseFrequencyString(frequency)
-    const gainValue = parseGainString(gain)
-    const qValue = parseFloat(q)
-    const slopeValue = parseFloat(slope)
 
-    if (frequencyValue === null || gainValue === null || qValue === null || slopeValue === null) {
+    if (type === null || frequency === null || gain === null || q === null || slope === null) {
       return
     }
 
-    const filter = createFilter(type, frequencyValue, gainValue, qValue, slopeValue)
+    const filter = createFilter(type, frequency, gain, q, slope)
 
     if (!filter) {
       return
@@ -83,15 +79,15 @@ export const FilterRow: React.FC<BandProps> = (props) => {
   useEffect(() => {
     const unsubscribe = peq.events.on('filterChanged', (event) => {
       if (event.index === getFilterIndex(props.bandName)) {
-        setFrequency(event.frequency.toString())
-        setGain(event.gain.toString())
+        setFrequency(event.frequency)
+        setGain(event.gain)
 
         if (event.q !== undefined) {
-          setQ(event.q.toString())
+          setQ(event.q)
         }
 
         if (event.slope !== undefined) {
-          setSlope(event.slope.toString())
+          setSlope(event.slope)
         }
       }
     })
@@ -102,31 +98,22 @@ export const FilterRow: React.FC<BandProps> = (props) => {
   }, [peq.events, filter, props.bandName])
 
   const filterIndex = getFilterIndex(props.bandName)
-  const active = Math.abs(parseGainString(gain) ?? 0) > MIN_ABS_GAIN
+  const active = Math.abs(gain ?? 0) > MIN_ABS_GAIN
 
   return (
     <>
       <div className="peq-band" data-filter-index={filterIndex} data-active={active}>
-        <select value={type} onChange={(event) => setType(event.target.value)}>
+        <select value={type!} onChange={(event) => setType(event.target.value)}>
           <option value="Bell">Bell</option>
           <option value="Low Shelf">LS</option>
           <option value="High Shelf">HS</option>
         </select>
 
-        {/* <input type="text" value={frequency} /> */}
+        <FrequencyInput value={frequency} onChange={setFrequency} />
+        <GainInput value={gain} onChange={setGain} />
 
-        <FrequencyInput
-          value={parseFrequencyString(frequency)}
-          onChange={(frequency) => setFrequency(`${frequency}`)}
-        />
-
-        <GainInput value={parseGainString(gain)} onChange={(gain) => setGain(`${gain}`)} />
-
-        {type === 'Bell' && <QInput value={parseFloat(q)} onChange={(q) => setQ(`${q}`)} />}
-
-        {(type === 'Low Shelf' || type === 'High Shelf') && (
-          <SlopeInput value={parseFloat(slope)} onChange={(slope) => setSlope(`${slope}`)} />
-        )}
+        {type === 'Bell' && <QInput value={q} onChange={setQ} />}
+        {(type === 'Low Shelf' || type === 'High Shelf') && <SlopeInput value={slope} onChange={setSlope} />}
       </div>
     </>
   )

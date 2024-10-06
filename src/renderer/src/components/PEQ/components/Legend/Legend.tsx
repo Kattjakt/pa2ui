@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { getThirdOctaveBandFrequencyFromZeroOne } from '../../../common'
-import { usePEQ } from '../peq.context'
+import { getThirdOctaveBandFrequencyFromZeroOne } from '../../../../common'
+import { usePEQ } from '../../peq.context'
 import './Legend.scss'
 
 export const PEQLegend = () => {

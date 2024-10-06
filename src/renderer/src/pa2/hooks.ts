@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useClientContext } from '../client.context'
+import { Adapter } from './adapter'
+
+const DEBOUNCE_MS = 50
 
 const useClient = () => {
   const context = useClientContext()
@@ -28,7 +31,7 @@ export const useAsyncGetTimer = (path: string[], intervalMs: number): string => 
   return value ?? ''
 }
 
-export const useSubscribe = (path: string[]): string => {
+const useSubscribe = (path: string[]): string => {
   const client = useClient()
   const [value, setValue] = useState<string>()
 
@@ -49,29 +52,27 @@ export const useSubscribe = (path: string[]): string => {
 
 export const useLs = (path: string[]) => {
   const client = useClient()
-  const [ls, setLs] = useState<{ key: string; value: string }[] | null>(null)
-
+  const [entries, setEntries] = useState<{ key: string; value: string }[] | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!client) {
       return
     }
-    // setTimeout(() => {
-    setLs(null)
+
+    setEntries(null)
     setError(null)
 
     client
       .ls(path)
-      .then((ls) => setLs(ls))
+      .then((ls) => setEntries(ls))
       .catch((error) => setError(error))
-    // }, 500)
   }, [client, ...path])
 
-  return [ls, error] as const
+  return [entries, error] as const
 }
 
-export const useSyncedState = (path: string[]): [string, (value: string) => void] => {
+const useSyncedState = (path: string[]): [string, (value: string) => void] => {
   const client = useClient()
   const deviceValue = useSubscribe(path)
   const lastEmit = useRef<number>(0)
@@ -89,7 +90,7 @@ export const useSyncedState = (path: string[]): [string, (value: string) => void
 
       const msSinceLastEmit = performance.now() - lastEmit.current
 
-      if (msSinceLastEmit < 50) {
+      if (msSinceLastEmit < DEBOUNCE_MS) {
         if (timer.current) {
           clearTimeout(timer.current)
         }
@@ -100,7 +101,7 @@ export const useSyncedState = (path: string[]): [string, (value: string) => void
           }
 
           set(param)
-        }, 50)
+        }, DEBOUNCE_MS)
 
         return
       }
@@ -119,103 +120,21 @@ export const useSyncedState = (path: string[]): [string, (value: string) => void
     [client, ...path]
   )
 
-  return [deviceValue ?? '', set]
+  return [deviceValue, set]
 }
 
-export const useSyncedStateWithTranslator = <T>(
-  path: string[],
-  translator: Translator<T>
-): [T | null, (value: T) => void] => {
-  const [value, setValue] = useSyncedState(path)
+export function useDspState<T = string>(path: string[], adapter?: Adapter<T>): [T | null, (value: T) => void] {
+  const [rawValue, setRawValue] = useSyncedState(path)
 
-  return [value ? translator.from(value) : null, (value) => setValue(translator.to(value))]
-}
+  if (!adapter) {
+    return [rawValue as T, setRawValue as (value: T) => void]
+  }
 
-type Translator<U> = {
-  from: (value: string) => U | null
-  to: (value: U) => string
-}
+  const adaptedValue = rawValue ? adapter.from(rawValue) : null
 
-export const translator = {
-  // "On", "Off"
-  boolean: {
-    from: (value: string) => value === 'On',
-    to: (value: boolean) => (value ? 'On' : 'Off')
-  } satisfies Translator<boolean>,
+  const setValue = (value: T) => {
+    setRawValue(adapter.to(value))
+  }
 
-  // "100", "100hz", "100Hz", "0.1kHz", "0.1khz"
-  frequency: {
-    from: (freq: string) => {
-      if (freq === 'Out') {
-        return null
-      }
-
-      const match = freq.match(/(\d+(\.\d+)?)([kK]?[hH]?[zZ]?)?/)
-      if (!match) {
-        return null
-      }
-
-      const value = parseFloat(match[1])
-      const unit = match[3].toLowerCase()
-
-      if (unit === 'hz') {
-        return value
-      }
-
-      if (unit === 'khz') {
-        return value * 1000
-      }
-
-      return value
-    },
-    to: (value) => value.toString()
-  } satisfies Translator<number>,
-
-  // "100%"
-  percentage: {
-    from: (percentage: string) => {
-      const match = percentage.match(/(\d+(\.\d+)?)(%)/)
-
-      if (!match) {
-        return null
-      }
-
-      return parseFloat(match[1])
-    },
-    to: (value) => value.toString()
-  } satisfies Translator<number>,
-
-  // "-0.1dB" "10dB"
-  gain: {
-    from: (gain: string) => {
-      const match = gain.match(/(-?\d+(\.\d+)?)([dD]?[bB]?)?/)
-
-      if (!match) {
-        return null
-      }
-
-      return parseFloat(match[1])
-    },
-    to: (value) => value.toString()
-  } satisfies Translator<number>,
-
-  // "1.25ms/1.41ft/0.43m"
-  ms: {
-    from: (delay: string) => {
-      const match = delay.match(/(\d+(\.\d+)?)(ms)/)
-
-      if (!match) {
-        return null
-      }
-
-      return parseFloat(match[1])
-    },
-    to: (value) => value.toString()
-  } satisfies Translator<number>,
-
-  // "1.05", "-10"
-  number: {
-    from: (value: string) => parseFloat(value),
-    to: (value) => value.toString()
-  } satisfies Translator<number>
+  return [adaptedValue, setValue]
 }

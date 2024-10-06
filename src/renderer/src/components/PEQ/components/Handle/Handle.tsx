@@ -1,13 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import {
-  clamp,
-  getThirdOctaveBandFrequencyFromZeroOne,
-  getZeroOneFromThirdOctaveBandFrequency,
-  toLin,
-  toLog10
-} from '../../../common'
-import { NotchFilterParams, ShelfFilterParams } from '../core/filters'
-import { usePEQ, usePEQFilter } from '../peq.context'
+import { clamp, getThirdOctaveBandFrequencyFromZeroOne, getZeroOneFromThirdOctaveBandFrequency, toLin, toLog10 } from '../../../../common'
+import { NotchFilterParams, ShelfFilterParams } from '../../core/filters'
+import { usePEQ, usePEQFilter } from '../../peq.context'
 import './Handle.scss'
 
 interface Props {
@@ -77,11 +71,7 @@ export const PEQHandle: React.FC<Props> = (props) => {
 
       const pointerFreq = getThirdOctaveBandFrequencyFromZeroOne(pointerX / canvasBounds.width)
       const relY = 1 - pointerY / canvasBounds.height
-      const pointerGain = clamp(
-        relY * peq.decibelRange - peq.decibelRange / 2,
-        -peq.decibelRange / 2,
-        peq.decibelRange / 2
-      )
+      const pointerGain = clamp(relY * peq.decibelRange - peq.decibelRange / 2, -peq.decibelRange / 2, peq.decibelRange / 2)
 
       peq.events.emit('filterChanged', {
         index: props.filterIndex,
@@ -192,12 +182,7 @@ export const PEQHandle: React.FC<Props> = (props) => {
   const faded = Math.abs(filter?.params.gain ?? 0) <= 0 && !dragging
 
   return (
-    <div
-      className="peq-handle"
-      data-filter-index={props.filterIndex}
-      data-dragging={dragging}
-      data-faded={faded}
-    >
+    <div className="peq-handle" data-filter-index={props.filterIndex} data-dragging={dragging} data-faded={faded}>
       <div
         ref={ref}
         className="peq-handle__position"

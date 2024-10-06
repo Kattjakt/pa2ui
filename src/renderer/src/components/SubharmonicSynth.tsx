@@ -1,71 +1,35 @@
-import { parsePercentage } from '../pa2/common'
-import { useSyncedState } from '../pa2/hooks'
+import * as Adapter from '../pa2/adapter'
+import { useDspState } from '../pa2/hooks'
 import { PercentageInput } from './common/Inputs'
 
 export const SubharmonicSynth = () => {
-  const [enabled, setEnabled] = useSyncedState([
-    'Preset',
-    'SubharmonicSynth',
-    'SV',
-    'SubharmonicSynth'
-  ])
-
-  const [subharmonics, setSubharmonics] = useSyncedState([
-    'Preset',
-    'SubharmonicSynth',
-    'SV',
-    'Subharmonics'
-  ])
-
-  const [synthesisLevel_24_36, setSynthesisLevel_24_36] = useSyncedState([
-    'Preset',
-    'SubharmonicSynth',
-    'SV',
-    'Synthesis Level 24-36Hz'
-  ])
-
-  const [synthesisLevel_36_56, setSynthesisLevel_36_56] = useSyncedState([
-    'Preset',
-    'SubharmonicSynth',
-    'SV',
-    'Synthesis Level 36-56Hz'
-  ])
+  const [enabled, setEnabled] = useDspState(['Preset', 'SubharmonicSynth', 'SV', 'SubharmonicSynth'], Adapter.Boolean)
+  const [subharmonics, setSubharmonics] = useDspState(['Preset', 'SubharmonicSynth', 'SV', 'Subharmonics'], Adapter.Percentage)
+  const [synthesisLevel_24_36, setSynthesisLevel_24_36] = useDspState(['Preset', 'SubharmonicSynth', 'SV', 'Synthesis Level 24-36Hz'], Adapter.Percentage)
+  const [synthesisLevel_36_56, setSynthesisLevel_36_56] = useDspState(['Preset', 'SubharmonicSynth', 'SV', 'Synthesis Level 36-56Hz'], Adapter.Percentage)
 
   return (
-    <fieldset className="subharmonic-synth" data-disabled={enabled !== 'On'}>
+    <fieldset className="subharmonic-synth" data-disabled={!enabled}>
       <legend>
         <label>
-          <input
-            type="checkbox"
-            checked={enabled === 'On'}
-            onChange={(event) => setEnabled(event.target.checked ? 'On' : 'Off')}
-          />
+          <input type="checkbox" checked={!!enabled} onChange={(event) => setEnabled(event.target.checked)} />
           Subharmonics
         </label>
       </legend>
 
       <label className="key-value">
         Amount
-        <PercentageInput
-          value={parsePercentage(subharmonics)}
-          onChange={(value) => setSubharmonics(`${value}`)}
-        />
+        <PercentageInput value={subharmonics} onChange={setSubharmonics} />
       </label>
 
       <label className="key-value">
         36-56 Hz
-        <PercentageInput
-          value={parsePercentage(synthesisLevel_36_56)}
-          onChange={(value) => setSynthesisLevel_36_56(`${value}%`)}
-        />
+        <PercentageInput value={synthesisLevel_36_56} onChange={setSynthesisLevel_36_56} />
       </label>
 
       <label className="key-value">
         24-36 Hz
-        <PercentageInput
-          value={parsePercentage(synthesisLevel_24_36)}
-          onChange={(value) => setSynthesisLevel_24_36(`${value}`)}
-        />
+        <PercentageInput value={synthesisLevel_24_36} onChange={setSynthesisLevel_24_36} />
       </label>
 
       {/* <div style={{ display: 'flex', gap: '0.1rem' }}>
