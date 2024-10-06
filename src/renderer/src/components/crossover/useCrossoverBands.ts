@@ -1,15 +1,23 @@
-import { useSubscribe } from '../../pa2/hooks'
-import { Band } from './band'
+import * as Adapter from '../../pa2/adapter'
+import { useDspState } from '../../pa2/hooks'
 
-export const useCrossoverBands = () => {
-  const numBands = useSubscribe(['Preset', 'Crossover', 'AT', 'NumBands'])
-  const monoSub = useSubscribe(['Preset', 'Crossover', 'AT', 'MonoSub'])
-
-  const bands = getCrossoverBands(+numBands, monoSub === '0' ? false : true)
-  return bands
+export interface Band {
+  label: 'High' | 'Mid' | 'Low'
+  id: string
 }
 
-const getCrossoverBands = (numBands: number, monoSub: boolean): Band[] => {
+export const useCrossoverBands = () => {
+  const [numBands] = useDspState(['Preset', 'Crossover', 'AT', 'NumBands'], Adapter.Number)
+  const [monoSub] = useDspState(['Preset', 'Crossover', 'AT', 'MonoSub'], Adapter.Number)
+
+  return getCrossoverBands(numBands, monoSub)
+}
+
+const getCrossoverBands = (numBands: number | null, monoSub: number | null): Band[] => {
+  if (numBands === null || monoSub === null) {
+    return []
+  }
+
   if (numBands === 1) {
     return [{ label: 'High', id: 'Band_1' }]
   }

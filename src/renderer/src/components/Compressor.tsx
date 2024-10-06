@@ -1,25 +1,15 @@
-import { parseGainString } from '../pa2/common'
-import { useSyncedState } from '../pa2/hooks'
+import { useDspState } from '../pa2/hooks'
 import { GainInput } from './common/Inputs'
 
-// "Compressor": "Off",
-// "More": "50%",
-// "Threshold": "-16.0dB",
-// "Ratio": "1.4:1",
-// "Gain": "0.0dB",
-// "OverEasy": "Off",
-// "ThresholdMeter": "Under",
-// "GainReductionMeter": "0.0dB",
-// "MaxInputLevel": "0.0dB",
-// "CompressorType": "dbx 1066",
+import * as Adapter from '../pa2/adapter'
 
 export const Compressor = () => {
-  const [enabled, setEnabled] = useSyncedState(['Preset', 'Compressor', 'SV', 'Compressor'])
-  const [more, setMore] = useSyncedState(['Preset', 'Compressor', 'SV', 'More'])
-  const [threshold, setThreshold] = useSyncedState(['Preset', 'Compressor', 'SV', 'Threshold'])
-  const [ratio, setRatio] = useSyncedState(['Preset', 'Compressor', 'SV', 'Ratio'])
-  const [gain, setGain] = useSyncedState(['Preset', 'Compressor', 'SV', 'Gain'])
-  const [overeasy, setOvereasy] = useSyncedState(['Preset', 'Compressor', 'SV', 'OverEasy'])
+  const [enabled, setEnabled] = useDspState(['Preset', 'Compressor', 'SV', 'Compressor'], Adapter.Boolean)
+  const [more, setMore] = useDspState(['Preset', 'Compressor', 'SV', 'More'])
+  const [threshold, setThreshold] = useDspState(['Preset', 'Compressor', 'SV', 'Threshold'], Adapter.Decibel)
+  const [ratio, setRatio] = useDspState(['Preset', 'Compressor', 'SV', 'Ratio'])
+  const [gain, setGain] = useDspState(['Preset', 'Compressor', 'SV', 'Gain'], Adapter.Decibel)
+  const [overeasy, setOvereasy] = useDspState(['Preset', 'Compressor', 'SV', 'OverEasy'])
 
   // const thresholdMeter = useSubscribe(['Preset', 'Compressor', 'SV', 'ThresholdMeter'])
   // const gainReductionMeter = useSubscribe(['Preset', 'Compressor', 'SV', 'GainReductionMeter'])
@@ -32,41 +22,27 @@ export const Compressor = () => {
   // ])
 
   return (
-    <fieldset className="compressor" data-disabled={enabled !== 'On'}>
+    <fieldset className="compressor" data-disabled={!enabled}>
       <legend>
         <label>
-          <input
-            type="checkbox"
-            checked={enabled === 'On'}
-            onChange={(event) => setEnabled(event.target.checked ? 'On' : 'Off')}
-          />
+          <input type="checkbox" checked={!!enabled} onChange={(event) => setEnabled(event.target.checked)} />
           Compressor
         </label>
       </legend>
 
       <label className="key-value">
         Threshold
-        <GainInput
-          min={-60}
-          max={0}
-          value={parseGainString(threshold)}
-          onChange={(value) => setThreshold(`${value}`)}
-        />
+        <GainInput min={-60} max={0} value={threshold} onChange={setThreshold} />
       </label>
 
       <label className="key-value">
         Gain
-        <GainInput
-          min={-20}
-          max={20}
-          value={parseGainString(gain)}
-          onChange={(value) => setGain(`${value}`)}
-        />
+        <GainInput min={-20} max={20} value={gain} onChange={setGain} />
       </label>
 
       <label className="key-value">
         Ratio
-        <select value={ratio} onChange={(event) => setRatio(event.target.value)}>
+        <select value={ratio!} onChange={(event) => setRatio(event.target.value)}>
           <option value="1:1">1:1</option>
           <option value="1.1:1">1.1:1</option>
           <option value="1.2:1">1.2:1</option>
@@ -110,7 +86,7 @@ export const Compressor = () => {
 
       <label className="key-value">
         OverEasy
-        <select value={overeasy} onChange={(e) => setOvereasy(e.target.value)}>
+        <select value={overeasy!} onChange={(e) => setOvereasy(e.target.value)}>
           <option value="Off">Off</option>
           <option value="1">1</option>
           <option value="2">2</option>

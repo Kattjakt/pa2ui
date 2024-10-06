@@ -1,39 +1,22 @@
-import { Band } from '.'
-import { parseDelayString } from '../../../pa2/common'
-import { useSubscribe, useSyncedState } from '../../../pa2/hooks'
+import { useDspState } from '../../../pa2/hooks'
 import { DelayInput } from '../../common/Inputs'
+
+import * as Adapter from '../../../pa2/adapter'
+import { Band } from '../useCrossoverBands'
 
 interface Props {
   band: Band
 }
 
 export const CrossoverBandDelay = (props: Props) => {
-  const [enabled, setEnabled] = useSyncedState([
-    'Preset',
-    `${props.band.label} Outputs Delay`,
-    'SV',
-    'Delay'
-  ])
-
-  const [amount, setAmount] = useSyncedState([
-    'Preset',
-    `${props.band.label} Outputs Delay`,
-    'SV',
-    'Amount'
-  ]) // 0.44ms/0.49ft/0.15m
-
-  const maxDelay = useSubscribe(['Preset', `${props.band.label} Outputs Delay`, 'AT', 'MaxDelay']) // 10
-
-  const units = amount.split('/').slice(1)
+  const [enabled, setEnabled] = useDspState(['Preset', `${props.band.label} Outputs Delay`, 'SV', 'Delay'], Adapter.Boolean)
+  const [amount, setAmount] = useDspState(['Preset', `${props.band.label} Outputs Delay`, 'SV', 'Amount'], Adapter.Delay)
+  const [maxDelay] = useDspState(['Preset', `${props.band.label} Outputs Delay`, 'AT', 'MaxDelay'], Adapter.Number)
 
   return (
     <div className="crossover-band__row delay">
       <label className="delay__active">
-        <input
-          type="checkbox"
-          checked={enabled === 'On'}
-          onChange={(e) => setEnabled(e.target.checked ? 'On' : 'Off')}
-        />
+        <input type="checkbox" checked={!!enabled} onChange={(e) => setEnabled(e.target.checked)} />
         Delay
       </label>
       {/*
@@ -48,13 +31,8 @@ export const CrossoverBandDelay = (props: Props) => {
       /> */}
 
       <div style={{ display: 'flex' }}>
-        <div style={{ opacity: enabled === 'Off' ? 0.5 : 1 }}>
-          <DelayInput
-            min={0}
-            max={+maxDelay}
-            value={parseDelayString(amount)}
-            onChange={(value) => setAmount(`${value}ms`)}
-          />
+        <div style={{ opacity: enabled ? 1 : 0.5 }}>
+          <DelayInput min={0} max={maxDelay ?? undefined} value={amount} onChange={setAmount} />
         </div>
 
         {/* <div className="delay__units">

@@ -27,10 +27,8 @@ interface PEQContextState {
   actions: PEQContextActions
 }
 
-// Create the PEQ context
 export const PEQContext = createContext<PEQContextState | undefined>(undefined)
 
-// Create a PEQ provider component
 export const PEQProvider: React.FC<PropsWithChildren<PEQContextProps>> = ({ children }) => {
   const [emitter] = useState(() => createNanoEvents<FilterEvents>()) // yuck :(
   const { current: events } = useRef(emitter) // YUCK
@@ -66,7 +64,6 @@ export const PEQProvider: React.FC<PropsWithChildren<PEQContextProps>> = ({ chil
       setLPF,
       setHPF
     }
-    // Assign your PEQ state variables here
   }
 
   return <PEQContext.Provider value={peqContextValues}>{children}</PEQContext.Provider>

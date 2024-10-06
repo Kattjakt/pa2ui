@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { getZeroOneFromThirdOctaveBandFrequency } from '../../../common'
-import { RtaBar, useRtaBars } from '../../RTA'
-import { usePEQ } from '../peq.context'
+import { getZeroOneFromThirdOctaveBandFrequency } from '../../../../common'
+import { RtaBar, useRtaBars } from '../../../RTA'
+import { usePEQ } from '../../peq.context'
 import './Bars.scss'
 
 interface Props {
@@ -70,10 +70,7 @@ export const PEQBars = (props: Props) => {
 
     let canvasBounds = canvas.getBoundingClientRect()
 
-    return (
-      getZeroOneFromDb(averageGain - gain, -peq.decibelRange / 2, peq.decibelRange / 2) *
-      canvasBounds.height
-    )
+    return getZeroOneFromDb(averageGain - gain, -peq.decibelRange / 2, peq.decibelRange / 2) * canvasBounds.height
   }
 
   return (

@@ -1,19 +1,20 @@
-import { Band } from '.'
-import { parseGainString } from '../../../pa2/common'
-import { useSyncedState } from '../../../pa2/hooks'
+import { useDspState } from '../../../pa2/hooks'
 import { GainInput } from '../../common/Inputs'
+
+import * as Adapter from '../../../pa2/adapter'
+import { Band } from '../useCrossoverBands'
 
 interface Props {
   band: Band
 }
 
 export const CrossoverBandGain = (props: Props) => {
-  const [gain, setGain] = useSyncedState(['Preset', 'Crossover', 'SV', `${props.band.id}_Gain`])
+  const [gain, setGain] = useDspState(['Preset', 'Crossover', 'SV', `${props.band.id}_Gain`], Adapter.Decibel)
 
   return (
     <label className="crossover-band__row">
       Gain
-      <GainInput value={parseGainString(gain)} onChange={(value) => setGain(`${value}`)} />
+      <GainInput value={gain} onChange={setGain} />
     </label>
   )
 }

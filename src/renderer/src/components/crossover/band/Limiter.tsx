@@ -1,49 +1,22 @@
-import { Band } from '.'
-import { parseGainString } from '../../../pa2/common'
-import { useSubscribe, useSyncedState } from '../../../pa2/hooks'
+import * as Adapter from '../../../pa2/adapter'
+import { useDspState } from '../../../pa2/hooks'
 import { GainInput } from '../../common/Inputs'
+import { Band } from '../useCrossoverBands'
 
 interface Props {
   band: Band
 }
 
 export const CrossoverBandLimiter = (props: Props) => {
-  const [enabled, setEnabled] = useSyncedState([
-    'Preset',
-    `${props.band.label} Outputs Limiter`,
-    'SV',
-    'Limiter'
-  ])
-
-  const [threshold, setThreshold] = useSyncedState([
-    'Preset',
-    `${props.band.label} Outputs Limiter`,
-    'SV',
-    'Threshold'
-  ])
-
-  const [overeasy, setOvereasy] = useSyncedState([
-    'Preset',
-    `${props.band.label} Outputs Limiter`,
-    'SV',
-    'OverEasy'
-  ])
-
-  const thresholdMeter = useSubscribe([
-    'Preset',
-    `${props.band.label} Outputs Limiter`,
-    'SV',
-    'ThresholdMeter'
-  ])
+  const [enabled, setEnabled] = useDspState(['Preset', `${props.band.label} Outputs Limiter`, 'SV', 'Limiter'], Adapter.Boolean)
+  const [threshold, setThreshold] = useDspState(['Preset', `${props.band.label} Outputs Limiter`, 'SV', 'Threshold'], Adapter.Decibel)
+  const [overeasy, setOvereasy] = useDspState(['Preset', `${props.band.label} Outputs Limiter`, 'SV', 'OverEasy'])
+  const [thresholdMeter] = useDspState(['Preset', `${props.band.label} Outputs Limiter`, 'SV', 'ThresholdMeter'])
 
   return (
-    <div className="limiter" data-over={thresholdMeter === 'Over'} data-disabled={enabled !== 'On'}>
+    <div className="limiter" data-over={thresholdMeter === 'Over'} data-disabled={!enabled}>
       <label className="limiter__active">
-        <input
-          type="checkbox"
-          checked={enabled === 'On'}
-          onChange={(event) => setEnabled(event.target.checked ? 'On' : 'Off')}
-        />
+        <input type="checkbox" checked={!!enabled} onChange={(event) => setEnabled(event.target.checked)} />
         Limiter
       </label>
 
@@ -55,17 +28,12 @@ export const CrossoverBandLimiter = (props: Props) => {
       <div className="limiter__controls">
         <label>
           Threshold
-          <GainInput
-            min={-60}
-            max={0}
-            value={parseGainString(threshold)}
-            onChange={(value) => setThreshold(`${value}dB`)}
-          />
+          <GainInput min={-60} max={0} value={threshold} onChange={setThreshold} />
         </label>
 
         <label>
           Overeasy
-          <select value={overeasy} onChange={(e) => setOvereasy(e.target.value)}>
+          <select value={overeasy!} onChange={(e) => setOvereasy(e.target.value)}>
             <option value="Off">Off</option>
             <option value="1">1</option>
             <option value="2">2</option>

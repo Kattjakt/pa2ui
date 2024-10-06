@@ -1,13 +1,15 @@
 import { PropsWithChildren, useMemo } from 'react'
-import { useLs, useSyncedState } from '../../pa2/hooks'
+import { useDspState, useLs } from '../../pa2/hooks'
 import { FilterRow } from '../FilterRow'
-import { PEQBars } from './Bars/Bars'
-import { PEQGrid } from './Grid'
-import { PEQHandle } from './Handle/Handle'
-import { PEQLegend } from './Legend/Legend'
+import { PEQBars } from './components/Bars/Bars'
+import { PEQGrid } from './components/Grid'
+import { PEQHandle } from './components/Handle/Handle'
+import { PEQLegend } from './components/Legend/Legend'
+import { PEQFrequencyResponse } from './components/Response'
 import { PEQProvider } from './peq.context'
-import { PEQFrequencyResponse } from './Response'
 import './style.scss'
+
+import * as Adapter from '../../pa2/adapter'
 
 interface Props {
   path: string[]
@@ -25,9 +27,7 @@ const useBands = (path: string[]) => {
 
     // Extract the unique Band_0, Band_1, etc. prefixes from the keys
     const regex = /Band_\d+/
-    const prefixes = entries
-      .filter((entry) => regex.test(entry.key))
-      .map((entry) => entry.key.match(regex)![0])
+    const prefixes = entries.filter((entry) => regex.test(entry.key)).map((entry) => entry.key.match(regex)![0])
 
     return [...new Set(prefixes)]
   }, [entries])
@@ -38,10 +38,8 @@ const useBands = (path: string[]) => {
 const getFilterIndex = (bandName: string) => parseInt(bandName.split('_')[1]) - 1
 
 export const PEQ: React.FC<PropsWithChildren<Props>> = (props) => {
-  const [enabled, setEnabled] = useSyncedState([...props.path, 'ParametricEQ'])
+  const [enabled, setEnabled] = useDspState([...props.path, 'ParametricEQ'], Adapter.Boolean)
   const bandNames = useBands(props.path)
-
-  const shouldDisplayHandles = enabled === 'On'
 
   if (!bandNames.length) {
     return null
@@ -75,10 +73,7 @@ export const PEQ: React.FC<PropsWithChildren<Props>> = (props) => {
               <PEQLegend />
 
               {/* Handles */}
-              {shouldDisplayHandles &&
-                bandNames.map((bandName) => (
-                  <PEQHandle key={bandName} filterIndex={getFilterIndex(bandName)} />
-                ))}
+              {enabled && bandNames.map((bandName) => <PEQHandle key={bandName} filterIndex={getFilterIndex(bandName)} />)}
 
               <div
                 style={{
@@ -101,11 +96,7 @@ export const PEQ: React.FC<PropsWithChildren<Props>> = (props) => {
               </label> */}
 
                 <label>
-                  <input
-                    type="checkbox"
-                    checked={enabled === 'On'}
-                    onChange={(event) => setEnabled(event.target.checked ? 'On' : 'Off')}
-                  />
+                  <input type="checkbox" checked={!!enabled} onChange={(event) => setEnabled(event.target.checked)} />
                   {/* Enabled */}
                 </label>
               </div>

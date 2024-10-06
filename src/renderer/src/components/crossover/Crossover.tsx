@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react'
-import { parseFrequencyString } from '../../pa2/common'
-import { useSyncedState } from '../../pa2/hooks'
+import * as Adapter from '../../pa2/adapter'
+import { useDspState } from '../../pa2/hooks'
 import { Meter } from '../Meter'
 import { PEQ } from '../PEQ/PEQ'
 import { BW12Filter, BW24Filter, LR12Filter, LR24Filter } from '../PEQ/core/filters/crossover'
@@ -8,34 +8,31 @@ import { usePEQ } from '../PEQ/peq.context'
 import { FrequencyInput } from '../common/Inputs'
 import { Lane } from '../common/Lane'
 import { LaneItem } from '../common/LaneItem'
-import { SectionTitle } from '../common/SectionTitle'
-import { Band } from './band'
 import { CrossoverBandDelay } from './band/Delay'
 import { CrossoverBandGain } from './band/Gain'
 import { CrossoverBandLimiter } from './band/Limiter'
 import { CrossoverBandMute } from './band/Mute'
 import { CrossoverBandPolarity } from './band/Polarity'
-import { useCrossoverBands } from './useCrossoverBands'
+import { Band, useCrossoverBands } from './useCrossoverBands'
 
 interface CrossoverProps {
   band: Band
 }
 
-const useFilter = (type: string, frequency: string) => {
+const filters = ['BW 6', 'BW 12', 'BW 18', 'BW 24', 'BW 30', 'BW 36', 'BW 42', 'BW 48', 'LR 12', 'LR 24', 'LR 36', 'LR 48'] as const
+
+type FilterType = (typeof filters)[number]
+
+// yuck
+const useFilter = (type: FilterType | null, frequency: number | null) => {
   const filter = useMemo(() => {
-    if (frequency === 'Out') {
-      return null
-    }
-
-    const frequencyValue = parseFrequencyString(frequency)
-
-    if (frequencyValue === null) {
+    if (frequency === null || type === null) {
       return null
     }
 
     if (type === 'LR 12') {
       return new LR12Filter({
-        frequency: frequencyValue,
+        frequency,
         gain: 0,
         sampleRate: 48000
       })
@@ -43,7 +40,7 @@ const useFilter = (type: string, frequency: string) => {
 
     if (type === 'LR 24') {
       return new LR24Filter({
-        frequency: frequencyValue,
+        frequency,
         gain: 0,
         sampleRate: 48000
       })
@@ -51,14 +48,15 @@ const useFilter = (type: string, frequency: string) => {
 
     if (type === 'BW 12') {
       return new BW12Filter({
-        frequency: frequencyValue,
+        frequency,
         gain: 0,
         sampleRate: 48000
       })
     }
+
     if (type === 'BW 24') {
       return new BW24Filter({
-        frequency: frequencyValue,
+        frequency,
         gain: 0,
         sampleRate: 48000
       })
@@ -71,40 +69,30 @@ const useFilter = (type: string, frequency: string) => {
 }
 
 interface FilterSelectProps {
-  value: string
-  onChange: (value: string) => void
+  value: FilterType
+  onChange: (value: FilterType) => void
 }
 
 export const FilterSelect: React.FC<FilterSelectProps> = (props) => {
   return (
-    <select
-      className="filter-select"
-      value={props.value}
-      onChange={(event) => props.onChange(event.target.value)}
-    >
-      <option value="LR 12">LR 12</option>
-      <option value="LR 24">LR 24</option>
-      <option value="BW 12">BW 12</option>
-      <option value="BW 24">BW 24</option>
+    <select className="filter-select" value={props.value} onChange={(event) => props.onChange(event.target.value as FilterType)}>
+      {filters.map((filter) => (
+        <option key={filter} value={filter}>
+          {filter}
+        </option>
+      ))}
     </select>
   )
 }
 
 const CrossoverLPF = (props: CrossoverProps) => {
   const peq = usePEQ()
-
-  const [frequency, setFrequency] = useSyncedState([
-    'Preset',
-    'Crossover',
-    'SV',
-    `${props.band.id}_LPFrequency`
-  ])
-
-  const [type, setType] = useSyncedState(['Preset', 'Crossover', 'SV', `${props.band.id}_LPType`])
+  const [frequency, setFrequency] = useDspState(['Preset', 'Crossover', 'SV', `${props.band.id}_LPFrequency`], Adapter.Frequency)
+  const [type, setType] = useDspState<FilterType>(['Preset', 'Crossover', 'SV', `${props.band.id}_LPType`])
   const filter = useFilter(type, frequency)
 
   useEffect(() => {
-    if (!filter || frequency === 'Out') {
+    if (!filter || frequency === null) {
       return
     }
 
@@ -115,25 +103,20 @@ const CrossoverLPF = (props: CrossoverProps) => {
     }
   }, [peq.actions.setLPF, filter])
 
+  if (!type) {
+    return null
+  }
+
   return (
     <div className="crossover-band__filter crossover-band__filter--lpf">
       <div>
-        {frequency !== 'Out' && (
-          <FrequencyInput
-            value={parseFrequencyString(frequency)}
-            onChange={(value) => setFrequency(value.toString())}
-          />
-        )}
+        {typeof frequency === 'number' && <FrequencyInput value={frequency} onChange={setFrequency} />}
 
         <FilterSelect value={type} onChange={(value) => setType(value)} />
       </div>
 
-      {frequency === 'Out' && (
-        <input
-          type="checkbox"
-          checked={frequency !== 'Out'}
-          onChange={(event) => setFrequency(event.target.checked ? '20kHz' : '24kHz')}
-        />
+      {frequency === null && ( // OUT
+        <input type="checkbox" checked={frequency !== null} onChange={(event) => setFrequency(event.target.checked ? 20000 : 24000)} />
       )}
     </div>
   )
@@ -141,19 +124,12 @@ const CrossoverLPF = (props: CrossoverProps) => {
 
 const CrossoverHPF = (props: CrossoverProps) => {
   const peq = usePEQ()
-
-  const [frequency, setFrequency] = useSyncedState([
-    'Preset',
-    'Crossover',
-    'SV',
-    `${props.band.id}_HPFrequency`
-  ])
-  const [type, setType] = useSyncedState(['Preset', 'Crossover', 'SV', `${props.band.id}_HPType`])
-
+  const [frequency, setFrequency] = useDspState(['Preset', 'Crossover', 'SV', `${props.band.id}_HPFrequency`], Adapter.Frequency)
+  const [type, setType] = useDspState<FilterType>(['Preset', 'Crossover', 'SV', `${props.band.id}_HPType`])
   const filter = useFilter(type, frequency)
-  // out 16Hz  20kHz Out
+
   useEffect(() => {
-    if (!filter || frequency === 'Out') {
+    if (!filter || frequency === null) {
       return
     }
 
@@ -164,26 +140,18 @@ const CrossoverHPF = (props: CrossoverProps) => {
     }
   }, [peq.actions.setHPF, filter])
 
+  if (!type) {
+    return null
+  }
   return (
     <div className="crossover-band__filter crossover-band__filter--hpf">
       <div>
-        {frequency !== 'Out' && (
-          <FrequencyInput
-            value={parseFrequencyString(frequency)}
-            onChange={(value) => setFrequency(value.toString())}
-          />
-        )}
+        {frequency !== null && <FrequencyInput value={frequency} onChange={setFrequency} />}
 
         <FilterSelect value={type} onChange={(value) => setType(value)} />
       </div>
 
-      {frequency === 'Out' && (
-        <input
-          type="checkbox"
-          checked={frequency !== 'Out'}
-          onChange={(event) => setFrequency(event.target.checked ? '16Hz' : '10Hz')}
-        />
-      )}
+      {frequency === null && <input type="checkbox" checked={frequency !== null} onChange={(event) => setFrequency(event.target.checked ? 16 : 10)} />}
     </div>
   )
 }
@@ -233,13 +201,8 @@ const CrossoverBand = (props: CrossoverProps) => {
                   marginBottom: '0.5rem'
                 }}
               >
-                <Meter path={['Preset', 'OutputMeters', 'SV', `${props.band.label}LeftOutput`]}>
-                  {/* L */}
-                </Meter>
-
-                <Meter path={['Preset', 'OutputMeters', 'SV', `${props.band.label}RightOutput`]}>
-                  {/* R */}
-                </Meter>
+                <Meter path={['Preset', 'OutputMeters', 'SV', `${props.band.label}LeftOutput`]}>{/* L */}</Meter>
+                <Meter path={['Preset', 'OutputMeters', 'SV', `${props.band.label}RightOutput`]}>{/* R */}</Meter>
               </div>
 
               <CrossoverBandMute band={props.band} />
@@ -256,7 +219,7 @@ export const Crossover: React.FC = () => {
 
   return (
     <div className="crossover">
-      <SectionTitle>Crossover</SectionTitle>
+      <div className="section-title">Crossover</div>
 
       {bands?.map((band) => <CrossoverBand key={band.id} band={band} />)}
     </div>
