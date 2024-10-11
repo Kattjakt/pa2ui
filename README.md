@@ -7,6 +7,8 @@
 
 A highly opinionated UI for the [DBX DriveRack PA2](https://dbxpro.com/en/products/driverack-pa2) (and possibly other HiQnet devices?) implementing a subset of the features available in the official PA2 Control-app. Intentionally built to have everything important visible at all times - essentially making a simple screenshot of the application act as a "single source of truth".
 
+## download
+
 Pre-built binaries for Windows, Mac, and Linux can be found here: https://github.com/Kattjakt/pa2ui/releases
 
 ## features
@@ -36,7 +38,3 @@ Pre-built binaries for Windows, Mac, and Linux can be found here: https://github
 - Auto EQ
 - Graphic EQ
 - Feedback suppression
-
-## known issues
-
-- The implementation of the crossover slope visualizations are misleading and needs a rewrite
