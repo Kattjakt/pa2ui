@@ -27,12 +27,18 @@ export const PEQGrid: React.FC<Props> = (props) => {
   const dbMin = peq.decibelRange / -2
   const dbMax = peq.decibelRange / 2
 
-  const gridXs = getGridXs()
-  const gridYs: number[] = []
+  let gridXs = getGridXs()
+  let gridYs: number[] = []
 
-  for (let db = dbMin; db <= dbMax; db += props.decibelStep) {
+  for (let db = 0; db <= dbMax; db += props.decibelStep) {
     gridYs.push(db)
   }
+
+  for (let db = 0; db >= dbMin; db -= props.decibelStep) {
+    gridYs.push(db)
+  }
+
+  gridYs = [...new Set(gridYs)].sort((a, b) => a - b) // dedupe + sort
 
   return (
     <svg viewBox="0 0 100 10" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">

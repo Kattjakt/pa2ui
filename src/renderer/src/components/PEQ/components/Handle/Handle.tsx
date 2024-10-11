@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { clamp, getThirdOctaveBandFrequencyFromZeroOne, getZeroOneFromThirdOctaveBandFrequency, toLin, toLog10 } from '../../../../common'
-import { NotchFilterParams, ShelfFilterParams } from '../../core/filters'
 import { usePEQ, usePEQFilter } from '../../peq.context'
 import './Handle.scss'
 
@@ -25,13 +24,11 @@ export const PEQHandle: React.FC<Props> = (props) => {
       return
     }
 
-    let width = canvas?.offsetWidth ?? 0
-    let height = canvas?.offsetHeight ?? 0
-
-    let x = getZeroOneFromThirdOctaveBandFrequency(filter.params.frequency) * width
-    let y = height - ((filter.params.gain + peq.decibelRange / 2) / peq.decibelRange) * height
-
-    setXY([x, y])
+    if ('frequency' in filter) {
+      const x = getZeroOneFromThirdOctaveBandFrequency(filter.frequency) * canvas.offsetWidth
+      const y = canvas.offsetHeight - ((filter.gain + peq.decibelRange / 2) / peq.decibelRange) * canvas.offsetHeight
+      setXY([x, y])
+    }
   }, [filter, canvas, peq.sampleRate, peq.decibelRange])
 
   useEffect(() => {
@@ -121,37 +118,35 @@ export const PEQHandle: React.FC<Props> = (props) => {
       event.preventDefault()
       event.stopPropagation()
 
-      const params = filter?.params as ShelfFilterParams | NotchFilterParams
-
-      if (!params) {
+      if (!filter) {
         return
       }
 
-      if ('Q' in params) {
+      if ('Q' in filter) {
         const delta = event.deltaY / 2000
         const min = 0.1
         const max = 16
-        const startValueLog = toLog10(params.Q, min, max)
+        const startValueLog = toLog10(filter.Q, min, max)
         const newValue = toLin(startValueLog + delta, min, max)
         const newQ = newValue
 
         peq.events.emit('filterChanged', {
           index: props.filterIndex,
-          frequency: params.frequency,
-          gain: params.gain,
+          frequency: filter.frequency,
+          gain: filter.gain,
           q: newQ
         })
       }
 
-      if ('slope' in params) {
+      if ('slope' in filter) {
         let delta = event.deltaY / 150
 
-        let newSlope = params.slope + delta
+        let newSlope = filter.slope + delta
 
         peq.events.emit('filterChanged', {
           index: props.filterIndex,
-          frequency: params.frequency,
-          gain: params.gain,
+          frequency: filter.frequency,
+          gain: filter.gain,
           slope: newSlope
         })
       }
@@ -179,7 +174,8 @@ export const PEQHandle: React.FC<Props> = (props) => {
 
   const [x, y] = optimisticXY || xy
 
-  const faded = Math.abs(filter?.params.gain ?? 0) <= 0 && !dragging
+  const gain = 'gain' in filter ? filter.gain : 0 // yuckkkkk
+  const faded = Math.abs(gain) <= 0 && !dragging
 
   return (
     <div className="peq-handle" data-filter-index={props.filterIndex} data-dragging={dragging} data-faded={faded}>
@@ -196,13 +192,13 @@ export const PEQHandle: React.FC<Props> = (props) => {
       >
         <div className="peq-handle__identifier">{props.filterIndex + 1}</div>
 
-        {dragging && (
+        {dragging && 'frequency' in filter && (
           <div className="peq-handle__legend">
             <div className="peq-handle__frequency">
-              {filter.params.frequency.toFixed(0)} <span>Hz</span>
+              {filter.frequency.toFixed(0)} <span>Hz</span>
             </div>
             <div className="peq-handle__gain">
-              {filter.params.gain.toFixed(1)} <span>dB</span>
+              {filter.gain.toFixed(1)} <span>dB</span>
             </div>
           </div>
         )}

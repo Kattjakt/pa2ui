@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { getThirdOctaveBandFrequencyFromZeroOne, toDecibels } from '../../../common'
-import { BaseFilter } from '../core/filters'
-import { CrossoverFilter } from '../core/filters/crossover'
+import { Filter } from '../core/filter'
 import { usePEQ } from '../peq.context'
 
 export const generateFrequencies = (count: number): Float32Array => {
@@ -14,54 +13,81 @@ export const generateFrequencies = (count: number): Float32Array => {
   return frequencies
 }
 
-const generateFrequencyResponse = (
-  frequencies: Float32Array,
-  filters: BaseFilter[],
-  lpf: CrossoverFilter | null,
-  hpf: CrossoverFilter | null
-): Float32Array => {
+const generateFrequencyResponse = (frequencies: Float32Array, filters: Filter[]): Float32Array => {
   const frequencyResponse = new Float32Array(frequencies.length)
 
   frequencyResponse.fill(1)
 
   for (let filter of filters) {
-    if (!filter) {
-      continue
-    }
-
     for (let i = 0; i < frequencies.length; i++) {
-      frequencyResponse[i] *= filter.calculateFrequencyResponse(frequencies[i])
-    }
-  }
-
-  if (lpf) {
-    for (let i = 0; i < frequencies.length; i++) {
-      frequencyResponse[i] *= lpf.calculateLowPassResponse(frequencies[i])
-    }
-  }
-
-  if (hpf) {
-    for (let i = 0; i < frequencies.length; i++) {
-      frequencyResponse[i] *= hpf.calculateHighPassResponse(frequencies[i])
+      frequencyResponse[i] *= filter.getMagnitude(frequencies[i])
     }
   }
 
   return frequencyResponse
 }
 
-export const PEQFrequencyResponse = () => {
+const useFrequencyResponse = (frequencies: Float32Array | null) => {
   const peq = usePEQ()
-  const [frequencies, setFrequencies] = useState<Float32Array | null>(null)
 
-  const frequencyResponse = useMemo(() => {
+  return useMemo(() => {
     if (!frequencies) {
       return null
     }
 
     const filters = peq.filters.filter((filter) => filter !== null)
 
-    return generateFrequencyResponse(frequencies, filters, peq.lpf, peq.hpf)
+    if (peq.lpf) filters.push(peq.lpf)
+    if (peq.hpf) filters.push(peq.hpf)
+
+    return generateFrequencyResponse(frequencies, filters)
   }, [peq.filters, peq.lpf, peq.hpf, frequencies])
+}
+
+const drawFrequencyResponse = (context: CanvasRenderingContext2D, frequencyResponse: Float32Array, decibelRange: number) => {
+  context.clearRect(0, 0, context.canvas.width, context.canvas.height)
+
+  // const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height)
+  // const center = 0.5
+  // gradient.addColorStop(0.25, 'rgba(255, 0, 0, 1)')
+  // gradient.addColorStop(center - 0.1, 'rgba(255, 255, 255, 1)')
+  // gradient.addColorStop(center, 'rgba(255, 255, 255, 0.3)')
+  // gradient.addColorStop(1, 'rgba(255, 255, 255, 0.1)')
+  // ctx.strokeStyle = gradient
+  context.strokeStyle = 'rgba(255, 255, 255, 1)'
+  context.lineWidth = 2
+  context.beginPath()
+
+  let maxDb = decibelRange / 2
+  let minDb = -maxDb
+
+  for (let x = 0; x < frequencyResponse.length; x++) {
+    let gain = frequencyResponse[x]
+    let db = toDecibels(gain)
+    let y = context.canvas.height - ((db - minDb) / (maxDb - minDb)) * context.canvas.height
+
+    x === 0 ? context.moveTo(x, y) : context.lineTo(x, y)
+  }
+
+  context.stroke()
+
+  // Draw background if accent is set
+  const accentHue = getComputedStyle(context.canvas).getPropertyValue('--accent-hue')
+  if (accentHue) {
+    context.lineTo(context.canvas.width, context.canvas.height)
+    context.lineTo(0, context.canvas.height)
+    context.closePath()
+    context.fillStyle = `hsl(${accentHue}, 50%, 50%)`
+    context.globalAlpha = 0.2
+    context.fill()
+    context.globalAlpha = 1
+  }
+}
+
+export const PEQFrequencyResponse = () => {
+  const peq = usePEQ()
+  const [frequencies, setFrequencies] = useState<Float32Array | null>(null)
+  const frequencyResponse = useFrequencyResponse(frequencies)
 
   const draw = useCallback(() => {
     const canvas = peq.frequencyResponseCanvasRef.current
@@ -70,49 +96,11 @@ export const PEQFrequencyResponse = () => {
       return
     }
 
-    let ctx = canvas.getContext('2d')
+    const context = canvas.getContext('2d')
 
-    if (!ctx) throw new Error('Could not get a canvas context!')
+    if (!context) throw new Error('Could not get a canvas context!')
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-
-    // const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height)
-    // const center = 0.5
-    // gradient.addColorStop(0.25, 'rgba(255, 0, 0, 1)')
-    // gradient.addColorStop(center - 0.1, 'rgba(255, 255, 255, 1)')
-    // gradient.addColorStop(center, 'rgba(255, 255, 255, 0.3)')
-    // gradient.addColorStop(1, 'rgba(255, 255, 255, 0.1)')
-    // ctx.strokeStyle = gradient
-    ctx.strokeStyle = 'rgba(255, 255, 255, 1)'
-    ctx.lineWidth = 2
-    ctx.beginPath()
-
-    let maxDb = peq.decibelRange / 2
-    let minDb = -maxDb
-
-    for (let x = 0; x < frequencyResponse.length; x++) {
-      let gain = frequencyResponse[x]
-      let db = toDecibels(gain)
-      let y = canvas.height - ((db - minDb) / (maxDb - minDb)) * canvas.height
-
-      x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
-    }
-
-    ctx.stroke()
-
-    // Draw background if accent is set
-    let accent_hue = getComputedStyle(canvas).getPropertyValue('--accent-hue')
-
-    if (accent_hue) {
-      // Add a color to the space below the curve
-      ctx.lineTo(canvas.width, canvas.height)
-      ctx.lineTo(0, canvas.height)
-      ctx.closePath()
-      ctx.fillStyle = `hsl(${accent_hue}, 50%, 50%)`
-      ctx.globalAlpha = 0.2
-      ctx.fill()
-      ctx.globalAlpha = 1
-    }
+    drawFrequencyResponse(context, frequencyResponse, peq.decibelRange)
   }, [peq.frequencyResponseCanvasRef, peq.decibelRange, frequencyResponse])
 
   useEffect(() => {
@@ -142,13 +130,8 @@ export const PEQFrequencyResponse = () => {
   }, [peq.frequencyResponseCanvasRef])
 
   useEffect(() => {
-    if (!frequencyResponse) {
-      return
-    }
-
     requestAnimationFrame(() => draw())
-    // draw()
-  }, [frequencyResponse, draw])
+  }, [draw])
 
   return <canvas ref={peq.frequencyResponseCanvasRef}></canvas>
 }

@@ -2,9 +2,7 @@ import { useEffect } from 'react'
 import * as Adapter from '../pa2/adapter'
 import { useDspState } from '../pa2/hooks'
 import { FrequencyInput, GainInput, QInput, SlopeInput } from './common/Inputs'
-import { HighShelfFilter } from './PEQ/core/filters/high-shelf'
-import { LowShelfFilter } from './PEQ/core/filters/low-shelf'
-import { NotchFilter } from './PEQ/core/filters/notch'
+import { Bell, Filter, HighShelf, LowShelf } from './PEQ/core/filter'
 import { usePEQ, usePEQFilter } from './PEQ/peq.context'
 
 // Minimum gain for a band
@@ -18,29 +16,14 @@ interface BandProps {
   bandName: string
 }
 
-const createFilter = (type: string, frequency: number, gain: number, q: number, slope: number) => {
+const createFilter = (type: string, frequency: number, gain: number, Q: number, slope: number): Filter | null => {
   switch (type) {
     case 'Bell':
-      return new NotchFilter({
-        frequency,
-        Q: q,
-        gain,
-        sampleRate: 48000
-      })
+      return new Bell(frequency, Q, gain)
     case 'Low Shelf':
-      return new LowShelfFilter({
-        frequency,
-        slope,
-        gain,
-        sampleRate: 48000
-      })
+      return new LowShelf(frequency, slope, gain)
     case 'High Shelf':
-      return new HighShelfFilter({
-        frequency,
-        slope,
-        gain,
-        sampleRate: 48000
-      })
+      return new HighShelf(frequency, slope, gain)
   }
 
   return null
