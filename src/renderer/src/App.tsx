@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ClientContextProvider } from './client.context'
 import { Compressor } from './components/Compressor'
+import { Crossover } from './components/crossover/Crossover'
 import { Overview } from './components/Overview'
 import { PEQ } from './components/PEQ/PEQ'
 import { RtaControls } from './components/RTA'
 import { SignalGenerator } from './components/SignalGenerator'
 import { SubharmonicSynth } from './components/SubharmonicSynth'
-import { Crossover } from './components/crossover/Crossover'
 
 export type Device = {
   ip: string
@@ -106,11 +106,7 @@ function App(): JSX.Element {
 
                   <div>
                     <label>
-                      <input
-                        type="checkbox"
-                        checked={rtaEnabled}
-                        onChange={(event) => setRtaEnabled(event.target.checked)}
-                      />
+                      <input type="checkbox" checked={rtaEnabled} onChange={(event) => setRtaEnabled(event.target.checked)} />
                       Enabled
                     </label>
 

@@ -1,23 +1,33 @@
 import { Emitter, createNanoEvents } from 'nanoevents'
 import React, { PropsWithChildren, createContext, useCallback, useRef, useState } from 'react'
-import { FilterEvents } from './core/events'
-import { BaseFilter } from './core/filters'
-import { CrossoverFilter } from './core/filters/crossover'
+import { Filter } from './core/filter'
+
+type FilterChangeEvent = {
+  index: number
+  frequency: number
+  gain: number
+  q?: number
+  slope?: number
+}
+
+interface FilterEvents {
+  filterChanged: (event: FilterChangeEvent) => void
+}
 
 interface PEQContextProps {}
 
 interface PEQContextActions {
-  setFocusedFilter: (filter: BaseFilter | null) => void
-  setFilter: (index: number, filter: BaseFilter | null) => void
-  setLPF: (filter: CrossoverFilter | null) => void
-  setHPF: (filter: CrossoverFilter | null) => void
+  setFocusedFilter: (filter: Filter | null) => void
+  setFilter: (index: number, filter: Filter | null) => void
+  setLPF: (filter: Filter | null) => void
+  setHPF: (filter: Filter | null) => void
 }
 
 interface PEQContextState {
-  focusedFilter: BaseFilter | null
-  lpf: CrossoverFilter | null
-  hpf: CrossoverFilter | null
-  filters: Array<BaseFilter | null>
+  focusedFilter: Filter | null
+  lpf: Filter | null
+  hpf: Filter | null
+  filters: Array<Filter | null>
   dragging?: never
   sampleRate: number
   decibelRange: number
@@ -33,15 +43,15 @@ export const PEQProvider: React.FC<PropsWithChildren<PEQContextProps>> = ({ chil
   const [emitter] = useState(() => createNanoEvents<FilterEvents>()) // yuck :(
   const { current: events } = useRef(emitter) // YUCK
 
-  const [filters, setFilters] = useState<Array<BaseFilter | null>>([])
-  const [focusedFilter, setFocusedFilter] = useState<BaseFilter | null>(null)
+  const [filters, setFilters] = useState<Array<Filter | null>>([])
+  const [focusedFilter, setFocusedFilter] = useState<Filter | null>(null)
 
   const frequencyResponseCanvasRef = useRef<HTMLCanvasElement>(null)
 
-  const [lpf, setLPF] = useState<CrossoverFilter | null>(null)
-  const [hpf, setHPF] = useState<CrossoverFilter | null>(null)
+  const [lpf, setLPF] = useState<Filter | null>(null)
+  const [hpf, setHPF] = useState<Filter | null>(null)
 
-  const setFilter = useCallback((index: number, filter: BaseFilter | null) => {
+  const setFilter = useCallback((index: number, filter: Filter | null) => {
     setFilters((prevFilters) => {
       const newFilters = [...prevFilters]
       newFilters[index] = filter
@@ -54,7 +64,7 @@ export const PEQProvider: React.FC<PropsWithChildren<PEQContextProps>> = ({ chil
     lpf,
     hpf,
     focusedFilter,
-    decibelRange: 40,
+    decibelRange: 36,
     sampleRate: 48000,
     frequencyResponseCanvasRef,
     events,
