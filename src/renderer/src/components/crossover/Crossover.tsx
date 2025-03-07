@@ -3,7 +3,20 @@ import * as Adapter from '../../pa2/adapter'
 import { useDspState } from '../../pa2/hooks'
 import { Meter } from '../Meter'
 import { PEQ } from '../PEQ/PEQ'
-import { BW12Filter, BW24Filter, LR12Filter, LR24Filter } from '../PEQ/core/filters/crossover'
+import {
+  BW12Filter,
+  BW18Filter,
+  BW24Filter,
+  BW30Filter,
+  BW36Filter,
+  BW42Filter,
+  BW48Filter,
+  BW6Filter,
+  LR12Filter,
+  LR24Filter,
+  LR36Filter,
+  LR48Filter
+} from '../PEQ/core/filters/crossover'
 import { usePEQ } from '../PEQ/peq.context'
 import { FrequencyInput } from '../common/Inputs'
 import { Lane } from '../common/Lane'
@@ -30,39 +43,40 @@ const useFilter = (type: FilterType | null, frequency: number | null) => {
       return null
     }
 
-    if (type === 'LR 12') {
-      return new LR12Filter({
-        frequency,
-        gain: 0,
-        sampleRate: 48000
-      })
+    const filterParams = {
+      frequency,
+      gain: 0,
+      sampleRate: 48000
     }
 
-    if (type === 'LR 24') {
-      return new LR24Filter({
-        frequency,
-        gain: 0,
-        sampleRate: 48000
-      })
+    switch (type) {
+      case 'BW 6':
+        return new BW6Filter(filterParams)
+      case 'BW 12':
+        return new BW12Filter(filterParams)
+      case 'BW 18':
+        return new BW18Filter(filterParams)
+      case 'BW 24':
+        return new BW24Filter(filterParams)
+      case 'BW 30':
+        return new BW30Filter(filterParams)
+      case 'BW 36':
+        return new BW36Filter(filterParams)
+      case 'BW 42':
+        return new BW42Filter(filterParams)
+      case 'BW 48':
+        return new BW48Filter(filterParams)
+      case 'LR 12':
+        return new LR12Filter(filterParams)
+      case 'LR 24':
+        return new LR24Filter(filterParams)
+      case 'LR 36':
+        return new LR36Filter(filterParams)
+      case 'LR 48':
+        return new LR48Filter(filterParams)
+      default:
+        return null
     }
-
-    if (type === 'BW 12') {
-      return new BW12Filter({
-        frequency,
-        gain: 0,
-        sampleRate: 48000
-      })
-    }
-
-    if (type === 'BW 24') {
-      return new BW24Filter({
-        frequency,
-        gain: 0,
-        sampleRate: 48000
-      })
-    }
-
-    return null
   }, [frequency, type])
 
   return filter
