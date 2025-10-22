@@ -1,4 +1,5 @@
 import udp from 'dgram'
+import os from 'os'
 
 export type Device = {
   ip: string
@@ -9,9 +10,32 @@ export type Device = {
 type Callback = (devices: Device[]) => void
 
 const DBX_UDP_PORT = 19272
-const CLIENT_UDP_PORT = 52990
+const CLIENT_UDP_PORT = 0 // Leave it to OS
 
-const BROADCAST_IP = '192.168.1.255'
+const getBroadcastAddresses = (): string[] => {
+  const interfaces = os.networkInterfaces()
+  const addrs: string[] = []
+
+  for (const name in interfaces) {
+    const iface = interfaces[name]
+    if (!iface) continue
+
+    for (const addr of iface) {
+      if (addr.family === 'IPv4' && !addr.internal && !addr.address.startsWith('169.254.')) {
+        const ip = addr.address.split('.').map(Number)
+        const netmask = addr.netmask.split('.').map(Number)
+        const broadcast = ip.map((byte, i) => byte | (~netmask[i] & 255)).join('.')
+        addrs.push(broadcast)
+      }
+    }
+  }
+
+  if (addrs.length === 0) {
+    return ['255.255.255.255']
+  }
+
+  return addrs
+}
 const BROADCAST_PACKET = `
   delay 100
   get \\\\Node\\AT\\Class_Name
@@ -42,7 +66,10 @@ export class Discovery {
       server.setBroadcast(true)
 
       const timer = setInterval(() => {
-        server.send(Buffer.from(BROADCAST_PACKET), DBX_UDP_PORT, BROADCAST_IP)
+
+        for (const ip of getBroadcastAddresses()) {
+          server.send(Buffer.from(BROADCAST_PACKET), DBX_UDP_PORT, ip)
+        }
 
         this.devices = this.devices.filter((device) => {
           if (Date.now() - device.lastSeen > 5000) {
